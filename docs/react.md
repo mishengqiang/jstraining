@@ -192,7 +192,7 @@ React-Bootstrap：https://react-bootstrap.github.io/
 
 ReCharts 是一个 React 图表组件库。http://recharts.org/
 
-浏览器打开`demos/recharts-demo/index.html`，按照[《操作说明》](../demos/README.md#recharts)，仔细查看源码。
+浏览器打开`demos/recharts-demo/index.html`，按照[《操作说明》](../demos/README.md#recharts)，仔细查看源码，体会 JSX 语法对表达复杂组件的优势。
 
 ```html
 <LineChart width={1000} height={400} data={data}>
@@ -206,37 +206,135 @@ ReCharts 是一个 React 图表组件库。http://recharts.org/
 
 ---
 
-## React 应用的架构
+## React 的核心思想
 
-React 只是一个 DOM 的抽象层，并没有解决应用程序的架构问题：大型应用程序应该如何组织代码？
+View 是 State 的输出。
 
-Facebook 提出 Flux 架构的概念。
+```javascript
+view = f(state)
+```
 
-![](./images/flow.png)
-
-最大特点：数据单向流动
+上式中，`f`表示函数关系。只要 State 发生变化，View 也要随之变化。
 
 ---
 
-## 目前最流行的两个 React 框架
+React 的本质是将图形界面（GUI）函数化。
 
-- MobX：采用观察者模式，自动响应数据变化
-- Redux：Flux 的函数式实现
+```javascript
+const person = {
+  name: "michel",
+  age: 31
+}
+
+const App = ({ person }) => <h1>{ person.name }</h1>
+
+ReactDOM.render(<App person={person} />, document.body)
+```
+
+---
+
+## React 没有解决的问题
+
+React 本身只是一个 DOM 的抽象层，使用组件构建虚拟 DOM。
+
+如果开发大应用，还需要解决两个问题。
+
+- 架构：大型应用程序应该如何组织代码？
+- 通信：组件之间如何通信？
+
+---
+
+## 架构问题
+
+React 只是视图层的解决方案，可以用于任何一种架构。
+
+- MVC
+- MVVM
+- Observer
+- Reactive
+- ...
+
+到底哪一种架构最合适 React ？
+
+---
+
+## 通信问题
+
+组件会发生三种通信。
+
+- 向子组件发消息
+- 向父组件发消息
+- 向其他组件发消息
+
+React 只提供了一种通信手段：传参。对于大应用，很不方便。
+
+---
+
+## 状态的同步
+
+通信的本质是状态的同步。
+
+React 同步状态的基本方法：找到通信双方最近的共同父组件，通过它的`state`，使得子组件的状态保持同步。
+
+---
+
+## Flux 架构
+
+Facebook 提出 Flux 架构的概念，被认为是 React 应用的标准架构。
+
+![](./images/flow.png)
+
+最大特点：数据单向流动。与 MVVM 的数据双向绑定，形成鲜明对比。
+
+---
+
+## Flux 的核心思想
+
+- 不同组件的`state`，存放在一个外部的、公共的 Store 上面。
+- 组件订阅 Store 的不同部分。
+- 组件发送（dispatch）动作（action），引发 Store 的更新。
+
+Flux 只是一个概念，有30多种实现。
+
+---
+
+## 目前最流行的两个 React 架构
+
+React 架构的最重要作用：管理 Store 与 View 之间的关系。
+
+- MobX：响应式（Reactive）管理，state 是可变对象，适合中小型项目
+- Redux：函数式（Functional）管理，state 是不可变对象，适合大型项目
 
 ---
 
 ## MobX 架构
 
-MobX 的核心概念，就是组件是观察者，一旦`Store`有变化，会立刻被组件观察到，从而引发重新渲染。
+MobX 的核心是观察者模式。
+
+- Store 是被观察者（observable）
+- 组件是观察者（observer）
+
+一旦`Store`有变化，会立刻被组件观察到，从而引发重新渲染。
+
+---
+
+## MobX 的最简单例子
 
 ```javascript
-@observer
-class App extends React.Component {
-  render() {
-    // ...
-  }
-}
+const {observable} = mobx;
+const {observer} = mobxReact;
+
+const person = observable({name: "张三", age: 31});
+
+const App = observer(
+  ({ person }) => <h1>{ person.name }</h1>
+);
+
+ReactDOM.render(<App person={person} />, document.body);
+person.name = "李四";
 ```
+
+代码：`demos/mobx-demo/browser-demo`目录
 
 ---
 
@@ -275,6 +373,14 @@ Redux 的核心概念
 
 ---
 
+## Redux 应用的架构
+
+![](./images/architecture-redux.png)
+
+Redux 层保存所有状态，React 组件拿到状态以后，渲染出 HTML 代码。
+
+---
+
 ## 示例：Redux
 
 进入`demos/redux-demo`目录，按照[《操作说明》](../demos/README.md#redux)，理解 Redux 框架。
@@ -282,7 +388,7 @@ Redux 的核心概念
 ---
 
 - Redux 将组件分成 UI 组件和容器组件两类。
-- UI 组件是纯组件，需要用户自己写。
+- UI 组件是纯组件，不包含 state 和生命周期方法，不涉及组件的行为，只涉及组件的外观。
 
 ```javascript
 <div className="index">
@@ -296,9 +402,13 @@ Redux 的核心概念
 
 ---
 
-容器组件在用户给出配置以后，由 Redux 生成。
+容器组件正好相反。
 
-```javascript、
+- 不涉及组件的外观，只涉及组件的行为。
+- 负责订阅 Store，将 Store 的数据处理以后，再通过参数传给 UI 组件。
+- 用户给出配置以后，由 Redux 生成。
+
+```javascript
 // MyComponent 是纯的 UI 组件
 const App = connect(
   mapStateToProps,
@@ -310,6 +420,16 @@ const App = connect(
 - mapDispatchToProps：定义 UI 组件与 Action 之间的映射
 
 ---
+
+## 拆分 UI 组件和容器组件的好处
+
+- UI 组件与后台数据无关，可以由设计师负责
+- 容器组件只负责数据和行为，一旦 Store 的数据结构变化，只要调整容器组件即可
+- 表现层和功能层脱钩，有利于代码重用，也有利于看清应用的数据结构和业务逻辑
+
+---
+
+## Reducer 函数
 
 `reducer`是一个纯函数，用来接收`action`，算出新的`state`。
 

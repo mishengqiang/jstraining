@@ -45,7 +45,7 @@ $ npm -v
 
 REST 是浏览器与服务器通信方式的一种设计风格。
 
-它的全称是“REpresentational State Transfer”，中文意为”表现层状态转换“。
+它的全称是“REpresentational State Transfer”，中文意为“表现层状态转换”。
 
 - Resource：资源
 - Representation：表现层
@@ -154,8 +154,7 @@ app.use('/home', router);
 
 ```javascript
 router.use(function(req, res, next) {
-  console.log('Thers is a requesting.');
+  console.log('There is a requesting.');
   next();
 });
 ```
-
